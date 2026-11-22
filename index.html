@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 影片剪輯最優方案診斷器｜免費互動選型工具</title>
+  <meta name="description" content="點選你的影片類型、素材現況與特效需求，30 秒免費診斷最適合你的 AI 影片剪輯處理方式（Hyperframes / Remotion / 自動錄屏 × MCP 控剪 / FFmpeg 混搭），附專屬 SOP 與 AI 開工指令。" />
+  <meta property="og:title" content="AI 影片剪輯最優方案診斷器｜免費互動選型工具" />
+  <meta property="og:description" content="點選影片類型與專案狀況，即時算出最優 AI 剪輯路線、執行 SOP、避坑提醒與可直接貼給 AI 的開工 Prompt。" />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%230b1120'/><path d='M22 18l26 14-26 14z' fill='%2338bdf8'/></svg>" />
+  <style>
+    /* =========================================================================
+       獨立公開免費版《AI 影片剪輯最優方案診斷器》— 零外部相依單檔設計系統
+       ========================================================================= */
+    :root {
+      --bg: #070b14;
+      --bg-elev: #0d1424;
+      --surface: #121b30;
+      --surface-2: #192440;
+      --border: rgba(148, 163, 184, 0.2);
+      --border-strong: rgba(148, 163, 184, 0.36);
+      --text: #f3f6fc;
+      --text-soft: #cbd5e1;
+      --muted: #94a3b8;
+      --purple: #a855f7;
+      --purple-soft: #d8b4fe;
+      --cyan: #38bdf8;
+      --cyan-soft: #bae6fd;
+      --gold: #f59e0b;
+      --gold-soft: #fde68a;
+      --green: #10b981;
+      --green-soft: #a7f3d0;
+      --red: #ef4444;
+      --red-soft: #fecaca;
+      --font-sans: "Noto Sans TC", "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: "Cascadia Code", "Fira Code", Consolas, "Courier New", monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* 背景深色科技光暈與微網格 */
+    .bg-mesh {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background:
+        radial-gradient(circle at 14% 12%, rgba(168, 85, 247, 0.14), transparent 42%),
+        radial-gradient(circle at 86% 78%, rgba(56, 189, 248, 0.13), transparent 44%),
+        radial-gradient(circle at 50% 98%, rgba(245, 158, 11, 0.06), transparent 36%),
+        var(--bg);
+    }
+    .bg-mesh::after {
+      content: ""; position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+      background-size: 56px 56px;
+    }
+
+    /* 頂部精簡工具列 */
+    .topbar {
+      position: sticky; top: 0; left: 0; right: 0; z-index: 90;
+      height: 58px; padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      background: rgba(7, 11, 20, 0.9); backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 15.5px; color: #fff; }
+    .brand-dot {
+      width: 28px; height: 28px; border-radius: 9px;
+      background: linear-gradient(135deg, #9333ea, #0ea5e9);
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+    }
+    .free-pill {
+      font-size: 11.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px;
+      background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.5); color: var(--green-soft);
+    }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .tb-btn {
+      background: var(--surface); color: var(--text-soft);
+      border: 1px solid var(--border-strong); border-radius: 9px;
+      padding: 6px 12px; font-size: 13px; font-weight: 800; font-family: inherit;
+      cursor: pointer; transition: all 0.16s; white-space: nowrap;
+    }
+    .tb-btn:hover { border-color: var(--cyan); color: #fff; background: var(--surface-2); }
+    .tb-btn.copied { border-color: var(--green); color: var(--green-soft); background: rgba(16, 185, 129, 0.2); }
+
+    /* 主容器 */
+    .wrap {
+      position: relative; z-index: 2;
+      max-width: 1400px; margin: 0 auto;
+      padding: 28px 24px 80px;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+
+    /* Hero 橫幅 */
+    .hero {
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(18, 27, 48, 0.96) 46%, rgba(56, 189, 248, 0.15));
+      border: 1.5px solid var(--border-strong); border-radius: 24px; padding: 26px 32px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+      padding: 5px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 800; letter-spacing: 0.05em;
+      border: 1.5px solid rgba(56, 189, 248, 0.45); background: rgba(56, 189, 248, 0.14); color: var(--cyan-soft);
+    }
+    .eyebrow.gold { border-color: rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.16); color: var(--gold-soft); }
+    h1 { font-size: clamp(26px, 3vw, 40px); font-weight: 900; line-height: 1.22; letter-spacing: -0.015em; }
+    .grad-text {
+      background: linear-gradient(90deg, #ffffff 0%, #7dd3fc 52%, #d8b4fe 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .lead { font-size: 15.5px; color: var(--text-soft); line-height: 1.65; max-width: 960px; }
+
+    .preset-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .preset-lbl { font-size: 13px; font-weight: 800; color: var(--muted); }
+    .preset-pill {
+      background: rgba(255, 255, 255, 0.05); color: var(--text-soft);
+      border: 1px solid var(--border-strong); border-radius: 999px;
+      padding: 6px 13px; font-size: 12.5px; font-weight: 800; font-family: inherit;
+      cursor: pointer; transition: all 0.16s;
+    }
+    .preset-pill:hover { border-color: var(--gold); color: var(--gold-soft); background: rgba(245, 158, 11, 0.15); }
+
+    /* 左右雙欄主舞台 */
+    .main-grid { display: grid; grid-template-columns: 1.02fr 1.08fr; gap: 24px; align-items: start; }
+
+    .q-stack { display: flex; flex-direction: column; gap: 18px; }
+    .q-card {
+      background: rgba(15, 23, 42, 0.94); border: 1.5px solid var(--border);
+      border-radius: 20px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px;
+    }
+    .q-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .q-title { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 900; color: #fff; }
+    .q-num {
+      width: 28px; height: 28px; border-radius: 999px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-size: 13px; font-weight: 900;
+      background: rgba(56, 189, 248, 0.2); border: 1.5px solid var(--cyan); color: var(--cyan-soft);
+    }
+    .q-hint { font-size: 12px; color: var(--muted); font-weight: 700; }
+
+    .opt-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .opt-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+
+    .opt-btn {
+      text-align: left; font-family: inherit; cursor: pointer;
+      background: rgba(9, 14, 28, 0.9); border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 13px 14px; color: var(--text-soft);
+      display: flex; flex-direction: column; gap: 4px; transition: all 0.16s;
+      position: relative;
+    }
+    .opt-btn:hover { border-color: var(--cyan); background: rgba(18, 27, 48, 0.96); }
+    .opt-btn.selected {
+      border-color: var(--cyan); background: rgba(56, 189, 248, 0.16);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.2); color: #fff;
+    }
+    .opt-btn.selected::after {
+      content: "✓"; position: absolute; top: 10px; right: 12px;
+      font-size: 13px; font-weight: 900; color: var(--cyan-soft);
+    }
+    .opt-btn.multi.selected {
+      border-color: var(--purple); background: rgba(168, 85, 247, 0.18);
+      box-shadow: 0 0 18px rgba(168, 85, 247, 0.22);
+    }
+    .opt-btn.multi.selected::after { color: var(--purple-soft); }
+    .opt-btn strong { font-size: 14.5px; color: #fff; padding-right: 18px; line-height: 1.35; }
+    .opt-btn span { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+
+    /* 右欄：即時診斷結果面板 */
+    .res-col { position: sticky; top: 74px; display: flex; flex-direction: column; gap: 16px; }
+    .res-hero {
+      border-radius: 22px; padding: 24px 26px; border: 2px solid var(--cyan);
+      background: linear-gradient(155deg, rgba(56, 189, 248, 0.16), rgba(13, 20, 36, 0.98) 55%);
+      box-shadow: 0 22px 54px rgba(0, 0, 0, 0.45);
+      display: flex; flex-direction: column; gap: 14px; transition: all 0.25s;
+    }
+    .res-hero.theme-purple { border-color: var(--purple); background: linear-gradient(155deg, rgba(168, 85, 247, 0.18), rgba(13, 20, 36, 0.98) 55%); }
+    .res-hero.theme-cyan   { border-color: var(--cyan);   background: linear-gradient(155deg, rgba(56, 189, 248, 0.18), rgba(13, 20, 36, 0.98) 55%); }
+    .res-hero.theme-green  { border-color: var(--green);  background: linear-gradient(155deg, rgba(16, 185, 129, 0.18), rgba(13, 20, 36, 0.98) 55%); }
+    .res-hero.theme-gold   { border-color: var(--gold);   background: linear-gradient(155deg, rgba(245, 158, 11, 0.18), rgba(13, 20, 36, 0.98) 55%); }
+
+    .res-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+    .conf-badge {
+      font-family: var(--font-mono); font-size: 13px; font-weight: 900;
+      padding: 6px 13px; border-radius: 999px;
+      background: rgba(16, 185, 129, 0.2); border: 1.5px solid var(--green); color: var(--green-soft);
+    }
+    .res-title { font-size: 25px; font-weight: 900; color: #fff; line-height: 1.3; }
+    .res-sub { font-size: 14.5px; color: var(--text-soft); line-height: 1.6; }
+    .stack-pills { display: flex; gap: 7px; flex-wrap: wrap; }
+    .stack-pill {
+      font-family: var(--font-mono); font-size: 12px; font-weight: 800;
+      padding: 4px 10px; border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08); border: 1px solid var(--border-strong); color: #fff;
+    }
+
+    .fit-box {
+      background: rgba(8, 13, 26, 0.85); border: 1px solid var(--border);
+      border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .fit-row { display: grid; grid-template-columns: 162px 1fr 44px; gap: 10px; align-items: center; font-size: 12.5px; font-weight: 800; }
+    .fit-track { height: 10px; border-radius: 999px; background: #141e33; overflow: hidden; }
+    .fit-fill { height: 100%; border-radius: 999px; transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+
+    .card {
+      background: rgba(18, 27, 48, 0.92); border: 1.5px solid var(--border);
+      border-radius: 20px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px;
+    }
+    ul.bullet { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    ul.bullet li { position: relative; padding-left: 18px; font-size: 14.5px; color: var(--text-soft); line-height: 1.58; }
+    ul.bullet li::before { content: "▸"; position: absolute; left: 0; color: var(--cyan); font-weight: 900; }
+    ul.bullet strong { color: #fff; }
+    code {
+      font-family: var(--font-mono); font-size: 0.9em;
+      background: rgba(56, 189, 248, 0.12); color: var(--cyan-soft);
+      padding: 1px 6px; border-radius: 5px;
+    }
+
+    .warn-box {
+      padding: 13px 16px; border-radius: 13px;
+      background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.42);
+      font-size: 13.5px; color: var(--text-soft); line-height: 1.58;
+    }
+    .warn-box strong { color: var(--gold-soft); }
+
+    .sop-list { display: flex; flex-direction: column; gap: 9px; }
+    .sop-step {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 11px 14px; border-radius: 12px;
+      background: rgba(10, 15, 28, 0.88); border: 1px solid var(--border);
+    }
+    .sop-idx {
+      width: 24px; height: 24px; border-radius: 7px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-size: 12px; font-weight: 900;
+      background: rgba(56, 189, 248, 0.18); color: var(--cyan-soft); margin-top: 1px;
+    }
+    .sop-body strong { display: block; font-size: 14px; color: #fff; margin-bottom: 2px; }
+    .sop-body span { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    /* 程式碼／指令複製框 */
+    .code-box {
+      background: #080d1a; border: 1.5px solid var(--border-strong);
+      border-radius: 14px; overflow: hidden; display: flex; flex-direction: column;
+    }
+    .code-head {
+      padding: 9px 14px; background: rgba(25, 36, 64, 0.85); border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    }
+    .code-lang { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--cyan-soft); }
+    .copy-btn {
+      background: rgba(56, 189, 248, 0.16); color: var(--cyan-soft);
+      border: 1px solid rgba(56, 189, 248, 0.45); border-radius: 8px;
+      padding: 4px 11px; font-size: 12px; font-weight: 800; font-family: inherit;
+      cursor: pointer; transition: all 0.16s; white-space: nowrap;
+    }
+    .copy-btn:hover { background: rgba(56, 189, 248, 0.3); color: #fff; }
+    .copy-btn.copied { background: rgba(16, 185, 129, 0.25); border-color: var(--green); color: var(--green-soft); }
+    .code-box pre {
+      padding: 13px 15px; font-family: var(--font-mono); font-size: 12.5px;
+      line-height: 1.62; color: #e2e8f0; overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+    }
+
+    /* 官方工具外部連結 */
+    .ext-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .ext-chip {
+      text-decoration: none; font-size: 12.5px; font-weight: 800;
+      padding: 7px 12px; border-radius: 9px;
+      background: rgba(56, 189, 248, 0.12); color: var(--cyan-soft);
+      border: 1px solid rgba(56, 189, 248, 0.38); transition: all 0.16s;
+    }
+    .ext-chip:hover { background: rgba(56, 189, 248, 0.26); color: #fff; }
+
+    /* 乾淨公開頁尾 */
+    .site-foot {
+      text-align: center; padding: 18px 12px 0; border-top: 1px solid var(--border);
+      font-size: 13px; color: var(--muted); line-height: 1.6;
+    }
+
+    /* 響應式與列印 PDF 支援 */
+    @media (max-width: 1080px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .res-col { position: static; }
+    }
+    @media (max-width: 640px) {
+      .opt-grid-2, .opt-grid-3 { grid-template-columns: 1fr; }
+      .fit-row { grid-template-columns: 126px 1fr 40px; }
+      .free-pill { display: none; }
+    }
+    @media print {
+      .topbar, .preset-row, .q-stack, .bg-mesh, .copy-btn { display: none !important; }
+      body { background: #fff; color: #111; }
+      .main-grid { grid-template-columns: 1fr; }
+      .res-hero, .card, .code-box, .sop-step, .fit-box {
+        background: #fff !important; color: #111 !important; border: 1px solid #cbd5e1 !important; box-shadow: none !important;
+      }
+      .res-title, .sop-body strong, ul.bullet strong { color: #0f172a !important; }
+      .res-sub, ul.bullet li, .sop-body span, .code-box pre { color: #334155 !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-mesh"></div>
+
+  <!-- 頂部獨立公開工具列 -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-dot">▶</span>
+      <span>AI 影片剪輯最優方案診斷器</span>
+      <span class="free-pill">免費公開工具 · 純本機運算</span>
+    </div>
+    <div class="top-actions">
+      <button type="button" class="tb-btn" id="btnShareUrl" title="複製帶有你目前選項的網址分享給團隊">🔗 複製分享連結</button>
+      <button type="button" class="tb-btn" id="btnPrint" title="列印或另存 PDF 專案藍圖">🖨 匯出 PDF</button>
+      <button type="button" class="tb-btn" id="btnReset">↺ 重設條件</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- Hero 說明與一鍵試算情境 -->
+    <section class="hero">
+      <div class="eyebrow gold">FREE INTERACTIVE WORKFLOW ADVISOR · 30 秒找到最省時的 AI 剪片路線</div>
+      <h1><span class="grad-text">這支影片該用哪種 AI 剪輯方式最省時？</span></h1>
+      <p class="lead">
+        面對 <strong>Hyperframes（單檔 HTML）</strong>、<strong>Remotion（React 程式化）</strong>、<strong>自動化操作錄屏 × MCP 控剪</strong>、<strong>實拍以文剪片</strong>與<strong>雙路線混搭</strong>，選錯工具可能讓你多花 10 倍等待時間。點選下方 4 個維度狀況，立即獲得最優處理架構、專屬執行步驟、起手指令與 AI 開工 Prompt！
+      </p>
+      <div class="preset-row">
+        <span class="preset-lbl">⚡ 快速套用真實情境：</span>
+        <button type="button" class="preset-pill" data-quick="promo">🚀 產品發表／宣傳大片</button>
+        <button type="button" class="preset-pill" data-quick="data">📊 零露臉財經數據週更</button>
+        <button type="button" class="preset-pill" data-quick="tutorial">💻 軟體操作教學錄屏</button>
+        <button type="button" class="preset-pill" data-quick="podcast">🎙 30 分鐘實拍訪談剪精華</button>
+        <button type="button" class="preset-pill" data-quick="short">📱 新手快速做 45 秒直式短影音</button>
+      </div>
+    </section>
+
+    <!-- 左右雙欄互動工作台 -->
+    <section class="main-grid">
+      <!-- ==================== 左欄：4 步互動點選 ==================== -->
+      <div class="q-stack">
+        <!-- Step 1 -->
+        <div class="q-card">
+          <div class="q-head">
+            <div class="q-title"><span class="q-num">1</span>你要製作哪一類型的影片？</div>
+            <span class="q-hint">單選 · 決定核心敘事結構</span>
+          </div>
+          <div class="opt-grid-2">
+            <button type="button" class="opt-btn selected" data-q="type" data-val="knowledge">
+              <strong>📊 知識科普／數據說書片</strong>
+              <span>用圖表、流程動畫、金句字卡講清一個主題</span>
+            </button>
+            <button type="button" class="opt-btn" data-q="type" data-val="product">
+              <strong>🚀 產品發表／宣傳片／App Demo</strong>
+              <span>追求高衝擊視覺、3D 動效與畫面轉換張力</span>
+            </button>
+            <button type="button" class="opt-btn" data-q="type" data-val="tutorial">
+              <strong>💻 軟體教學／程式碼／系統演示</strong>
+              <span>需要清晰展示介面點擊、指令或操作流程</span>
+            </button>
+            <button type="button" class="opt-btn" data-q="type" data-val="talking">
+              <strong>🎙 真人實拍口播／訪談／Podcast</strong>
+              <span>主軸是真人講解，需去氣口、對字幕與補 B-roll</span>
+            </button>
+            <button type="button" class="opt-btn" data-q="type" data-val="short">
+              <strong>📱 高節奏直式短影音（Reels/Shorts）</strong>
+              <span>15–60 秒，重前 3 秒鉤子、動效字幕與快節奏</span>
+            </button>
+            <button type="button" class="opt-btn" data-q="type" data-val="batch">
+              <strong>🏭 系列批量產片（固定版型換數據）</strong>
+              <span>同套品牌版型靠換腳本／JSON 定期自動出片</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="q-card">
+          <div class="q-head">
+            <div class="q-title"><span class="q-num">2</span>目前手上的實拍／錄屏素材狀況？</div>
+            <span class="q-hint">單選 · 決定是否會踩到渲染物理瓶頸</span>
+          </div>
+          <div class="opt-grid-2">
+            <button type="button" class="opt-btn selected" data-q="footage" data-val="none">
+              <strong>✨ 零實拍畫面（無中生有）</strong>
+              <span>只有文字大綱、研究資料或參考影片想法</span>
+            </button>
+            <button type="button" class="opt-btn" data-q="footage" data-val="need_rec">
+              <strong>🎬 尚未錄製軟體／網頁操作畫面</strong>
+              <span>需要操作示範畫面，且不想手抖一直重錄</span>
+            </button>
+            <button type="button" class="opt-btn" data-q="footage" data-val="short_raw">
+              <strong>🎞 已有精簡實拍素材（≤ 3 分鐘）</strong>
+              <span>已有幾段短畫面，想整合進高質感動畫結構中</span>
+            </button>
+            <button type="button" class="opt-btn" data-q="footage" data-val="long_raw">
+              <strong>📼 已有大量實拍／長錄屏（5–60 分鐘）</strong>
+              <span>需要大量刪空白氣口、口誤粗剪與逐字稿校對</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="q-card">
+          <div class="q-head">
+            <div class="q-title"><span class="q-num">3</span>請勾選這支片包含的特殊狀況與需求</div>
+            <span class="q-hint">可複選 · 精準決定引擎與配套流程</span>
+          </div>
+          <div class="opt-grid-2">
+            <button type="button" class="opt-btn multi" data-need="3d">
+              <strong>🧊 真 3D WebGL 運鏡／3D 轉場</strong>
+              <span>需要立體舞台、3D 方塊／翻轉或產品展示</span>
+            </button>
+            <button type="button" class="opt-btn multi selected" data-need="charts">
+              <strong>📈 動態數據圖表／KPI 計數跳動</strong>
+              <span>折線面積圖、柱狀賽跑圖、實測數據視覺化</span>
+            </button>
+            <button type="button" class="opt-btn multi" data-need="motion_blur">
+              <strong>💨 強烈動態模糊（Motion Blur）</strong>
+              <span>高速字卡甩入、快門殘影衝擊感</span>
+            </button>
+            <button type="button" class="opt-btn multi" data-need="light_leak">
+              <strong>✨ 電影漏光／大量 GPU 濾鏡風格化</strong>
+              <span>色差、發光、3D LUT、膠片光暈等大片濾鏡</span>
+            </button>
+            <button type="button" class="opt-btn multi selected" data-need="ai_voice">
+              <strong>🎙 需要自然口語 AI 配音</strong>
+              <span>不親自進棚錄音，需解決破音字與自動試聽</span>
+            </button>
+            <button type="button" class="opt-btn multi" data-need="dual_ratio">
+              <strong>📐 同步產出 16:9 橫式＋9:16 原生直式</strong>
+              <span>一份腳本同時分發 YouTube 與 Reels/Shorts</span>
+            </button>
+            <button type="button" class="opt-btn multi" data-need="zero_react">
+              <strong>🧩 不想碰 React／希望純 HTML 快速開工</strong>
+              <span>偏好單檔直覺修改、用「秒數」排程</span>
+            </button>
+            <button type="button" class="opt-btn multi" data-need="xml_polish">
+              <strong>🎨 最後要匯出 XML 進 DaVinci 調色精修</strong>
+              <span>AI 扛下 90% 粗剪，最後 10% 人工專業精修</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="q-card">
+          <div class="q-head">
+            <div class="q-title"><span class="q-num">4</span>這支專案你最優先看重哪一點？</div>
+            <span class="q-hint">單選 · 微調最終推薦權重</span>
+          </div>
+          <div class="opt-grid-3">
+            <button type="button" class="opt-btn selected" data-q="priority" data-val="speed">
+              <strong>⚡ 渲染與出片速度</strong>
+              <span>多核極速、少等待</span>
+            </button>
+            <button type="button" class="opt-btn" data-q="priority" data-val="easy">
+              <strong>🌱 零門檻最快上手</strong>
+              <span>套件輕量、範本多</span>
+            </button>
+            <button type="button" class="opt-btn" data-q="priority" data-val="cinema">
+              <strong>🏆 商業大片最高質感</strong>
+              <span>混搭最強工具不妥協</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== 右欄：即時最優推薦藍圖 ==================== -->
+      <div class="res-col">
+        <!-- 主推薦卡 -->
+        <div class="res-hero theme-cyan" id="resHero">
+          <div class="res-top">
+            <span class="eyebrow" id="resBadge">最優推薦處理方式</span>
+            <span class="conf-badge" id="resConf">適配度 96%</span>
+          </div>
+          <div class="res-title" id="resTitle"></div>
+          <p class="res-sub" id="resSub"></p>
+          <div class="stack-pills" id="resStack"></div>
+
+          <div class="fit-box">
+            <div style="font-size:12px;font-weight:800;color:var(--muted);margin-bottom:2px;">五大 AI 剪輯處理方式適配度即時評估：</div>
+            <div id="fitBars" style="display:flex;flex-direction:column;gap:7px;"></div>
+          </div>
+        </div>
+
+        <!-- 推薦理由與避坑提醒 -->
+        <div class="card">
+          <strong style="font-size:16px;color:#fff;">🎯 為什麼推薦這個處理方式？</strong>
+          <ul class="bullet" id="resReasons"></ul>
+          <div class="warn-box" id="resWarn"></div>
+        </div>
+
+        <!-- 專屬執行 SOP -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+            <strong style="font-size:16px;color:#fff;">🛠 專屬於你的執行步驟 SOP</strong>
+            <button type="button" class="copy-btn" id="btnCopyReport">📋 複製完整報告 (Markdown)</button>
+          </div>
+          <div class="sop-list" id="resSop"></div>
+        </div>
+
+        <!-- 立刻起手的終端機第一條指令 -->
+        <div class="code-box">
+          <div class="code-head">
+            <span class="code-lang" id="resCmdLang">⚡ 立刻起手的終端機指令（PowerShell / Terminal）</span>
+            <button type="button" class="copy-btn" id="btnCopyCmd">複製指令</button>
+          </div>
+          <pre id="resCmd"></pre>
+        </div>
+
+        <!-- 動態組裝「給 AI 的開工 Prompt」 -->
+        <div class="code-box">
+          <div class="code-head">
+            <span class="code-lang">✨ 專屬 AI 開工指令（直接貼給 AI Agent 啟動專案）</span>
+            <button type="button" class="copy-btn" id="btnCopyPrompt">複製開工 Prompt</button>
+          </div>
+          <pre id="resPrompt" style="max-height:220px;overflow-y:auto;"></pre>
+        </div>
+
+        <!-- 對應官方開源工具直連（純公開外部資源） -->
+        <div class="card" style="padding:16px 20px;">
+          <strong style="font-size:14.5px;color:var(--cyan-soft);">🔗 本方案會用到的官方免費／開源工具文件：</strong>
+          <div class="ext-links" id="resDocs"></div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-foot">
+      免費公開互動工具 · 所有計算皆在你的瀏覽器本機即時完成，不會上傳或蒐集任何個人資料。<br/>
+      支援將診斷網址分享給團隊成員，或一鍵匯出 Markdown／PDF 作為專案開工規格書。
+    </footer>
+  </main>
+
+  <script>
+    /**
+     * 獨立公開版《AI 影片剪輯最優方案診斷器》核心引擎
+     * 功能：
+     *   1. 依影片類型、素材長度、特效需求與優先取向即時計算 5 大處理路線分數
+     *   2. 動態組裝客製化執行 SOP、避坑警示、終端機起手指令與 AI 開工 Prompt
+     *   3. 支援 URL 參數同步分享（?t=...&f=...&n=...&p=...）、Markdown 匯出與列印 PDF
+     */
+    (function initStandaloneAdvisor() {
+      "use strict";
+
+      // 預設診斷狀態
+      const state = {
+        type: "knowledge",
+        footage: "none",
+        needs: new Set(["charts", "ai_voice"]),
+        priority: "speed",
+      };
+
+      // 五大 AI 剪輯處理方案定義（純獨立工具，僅連結公開官方文件）
+      const ROUTES = {
+        hf: {
+          id: "hf",
+          short: "Hyperframes 單檔 HTML",
+          badge: "推薦方案 · 無中生有輕量首選",
+          theme: "purple",
+          barColor: "linear-gradient(90deg,#9333ea,#c084fc)",
+          title: "Hyperframes（單檔 HTML/GSAP）＋ FFmpeg 封裝",
+          sub: "零 React 打包門檻、套件輕量秒裝！讓 AI 直接產純 HTML/CSS 網頁動畫，搭配內建 GSAP 3.15、一行原生 300° 動態模糊與官方 448 個現成特效目錄快速出片。",
+          stack: ["Hyperframes（開源 HTML 引擎）", "內建 GSAP 3.15", "448 官方特效目錄", "FFmpeg 混音／封裝"],
+          cmdLang: "PowerShell / Terminal · Hyperframes 起手預覽與渲染",
+          cmd: "# 1. 檢視內建特效目錄並啟動即時預覽（改檔秒更新）\nnpx hyperframes catalog --query chart\nnpx hyperframes preview ./my-video\n\n# 2. 預覽確認 100% 滿意後，再執行最終渲染\nnpx hyperframes render ./my-video -o out.mp4",
+          docs: [
+            { label: "Hyperframes 官方 GitHub ↗", href: "https://github.com/heygen-com/hyperframes" },
+            { label: "GSAP 動畫文件 ↗", href: "https://gsap.com/docs/v3/" },
+            { label: "FFmpeg 官方文件 ↗", href: "https://ffmpeg.org/documentation.html" },
+            { label: "免費商用思源黑體 Noto Sans TC ↗", href: "https://fonts.google.com/noto/specimen/Noto+Sans+TC" },
+          ],
+        },
+        remotion: {
+          id: "remotion",
+          short: "Remotion 多核程式化",
+          badge: "推薦方案 · 3D／圖表／批量極速王者",
+          theme: "cyan",
+          barColor: "linear-gradient(90deg,#0284c7,#38bdf8)",
+          title: "Remotion（React/TSX 8x 併發）＋ FFmpeg 封裝",
+          sub: "開箱支援多核平行渲染，實測 3D WebGL（搭配 --gl=angle）快 3.33×、動態數據圖表快 2.29×！坐擁 90 種 GPU 濾鏡與 21 種轉場，最擅長吃 JSON 數據批量產片。",
+          stack: ["Remotion（React 影片引擎）", "@remotion/three · transitions · effects", "JSON Props 數據驅動", "FFmpeg 響度避讓"],
+          cmdLang: "PowerShell / Terminal · Remotion Studio 預覽與渲染",
+          cmd: "# 1. 建立專案並啟動 Remotion Studio 逐幀即時預覽\nnpx create-video@latest\nnpx remotion studio\n\n# 2. 確認無誤後多核高速渲染（含 3D/WebGL 時加 --gl=angle）\nnpx remotion render MainVideo out.mp4 --gl=angle",
+          docs: [
+            { label: "Remotion 官方文件 ↗", href: "https://www.remotion.dev/docs/" },
+            { label: "Remotion 90 種 GPU 濾鏡 ↗", href: "https://www.remotion.dev/docs/effects" },
+            { label: "Remotion 21 種轉場 ↗", href: "https://www.remotion.dev/docs/transitions" },
+            { label: "Remotion Three.js 3D ↗", href: "https://www.remotion.dev/docs/three" },
+          ],
+        },
+        auto_mcp: {
+          id: "auto_mcp",
+          short: "自動化錄屏 × MCP 控剪",
+          badge: "推薦方案 · 軟體教學／操作演示黃金解",
+          theme: "green",
+          barColor: "linear-gradient(90deg,#059669,#34d399)",
+          title: "Playwright 自動操作錄製 × MCP 智能控剪",
+          sub: "先用自動化腳本零失誤執行點擊與輸入，錄出純淨無手抖的 1080p 操作畫面；再透過 MCP 協定讓 AI 直接操控剪輯軟體完成去氣口、上字幕、補重點字卡與避讓混音！",
+          stack: ["Playwright 自動錄屏", "支援 MCP 控制之剪輯軟體", "ASR 逐字稿以文剪片", "FFmpeg / XML 匯出"],
+          cmdLang: "PowerShell / Terminal · 錄屏 GOP 預處理（確保拖拉零卡頓）",
+          cmd: "# 1. 安裝 Playwright 準備自動執行操作並錄製 1080p 素材\npip install playwright && playwright install chromium\n\n# 2. 將錄好的素材強制每 1 秒插入關鍵幀，讓剪輯軟體秒拖不卡頓\nffmpeg -i raw_record.webm -c:v libx264 -crf 18 -g 30 -movflags +faststart clean_record.mp4",
+          docs: [
+            { label: "Playwright 自動化錄影文件 ↗", href: "https://playwright.dev/python/docs/videos" },
+            { label: "Model Context Protocol (MCP) 官網 ↗", href: "https://modelcontextprotocol.io/" },
+            { label: "FFmpeg 官方文件 ↗", href: "https://ffmpeg.org/documentation.html" },
+            { label: "DaVinci Resolve 免費剪輯調色 ↗", href: "https://www.blackmagicdesign.com/products/davinciresolve" },
+          ],
+        },
+        mcp_only: {
+          id: "mcp_only",
+          short: "實拍原片 × MCP 控剪",
+          badge: "推薦方案 · 長實拍／訪談最高效解法",
+          theme: "gold",
+          barColor: "linear-gradient(90deg,#d97706,#fbbf24)",
+          title: "實拍素材 × MCP 智能控剪（以文剪片＋語意加料）",
+          sub: "面對 5–60 分鐘實拍口播或訪談原片，避開程式化瀏覽器逐幀重繪瓶頸！直接由 MCP 操控原生剪輯軟體秒刪氣口與口誤、降噪避讓、依語意插 B-roll，並可匯出 XML 精修。",
+          stack: ["支援 MCP 控制之剪輯軟體", "ASR 逐字稿非破壞裁切", "AI 降噪＋BGM 避讓", "DaVinci Resolve XML"],
+          cmdLang: "PowerShell / Terminal · 實拍原片快速健檢與靜音偵測",
+          cmd: "# 1. 健檢實拍素材解析度、FPS 與音軌規格\nffprobe -v error -show_entries stream=codec_name,width,height,r_frame_rate -show_entries format=duration -of default=noprint_wrappers=1 raw.mp4\n\n# 2. 快速掃描超過 0.6 秒的空白靜音氣口\nffmpeg -i raw.mp4 -af silencedetect=noise=-35dB:d=0.6 -f null -",
+          docs: [
+            { label: "Model Context Protocol (MCP) 官網 ↗", href: "https://modelcontextprotocol.io/" },
+            { label: "OpenAI Whisper 語音辨識 ↗", href: "https://github.com/openai/whisper" },
+            { label: "DaVinci Resolve 免費精修 ↗", href: "https://www.blackmagicdesign.com/products/davinciresolve" },
+            { label: "FFmpeg 音訊濾鏡文件 ↗", href: "https://ffmpeg.org/ffmpeg-filters.html" },
+          ],
+        },
+        hybrid: {
+          id: "hybrid",
+          short: "雙路線混搭（程式動效 × MCP）",
+          badge: "推薦方案 · 商業大片／募資級混搭",
+          theme: "gold",
+          barColor: "linear-gradient(90deg,#a855f7,#38bdf8 55%,#fbbf24)",
+          title: "雙路線黃金混搭（程式化 3D/圖表片段 × MCP 控剪實拍 × FFmpeg）",
+          sub: "把兩大路線的強項發揮到極致：用 Hyperframes / Remotion 製作吸睛的 3D 開場、動態數據圖表與轉場字卡，再交由 MCP 控剪與實拍／錄屏主體組裝，最後用 FFmpeg 統一混音封裝！",
+          stack: ["Hyperframes / Remotion（動效段）", "MCP 控剪（實拍／錄屏段）", "FFmpeg -14 LUFS 避讓混音", "聯絡表視覺 QA"],
+          cmdLang: "PowerShell / Terminal · FFmpeg 商業混音避讓 ＋ 視覺 QA 聯絡表",
+          cmd: "# 1. 人聲 -14 LUFS 標準化 ＋ 說話自動壓低 BGM 避讓混音\nffmpeg -i voice.wav -stream_loop -1 -i bgm.mp3 -filter_complex \"[0:a]loudnorm=I=-14:TP=-1.5[vo];[1:a]volume=0.22[bg];[bg][vo]sidechaincompress=threshold=0.03:ratio=8:attack=40:release=450[dk];[vo][dk]amix=inputs=2:duration=first:normalize=0[out]\" -map \"[out]\" mixed.m4a\n\n# 2. 成片每 5 秒抽 1 幀拼成 4x3 視覺 QA 檢查圖\nffmpeg -v error -y -i final.mp4 -vf \"fps=1/5,scale=480:-1,tile=4x3\" -frames:v 1 qa_grid.png",
+          docs: [
+            { label: "Hyperframes GitHub ↗", href: "https://github.com/heygen-com/hyperframes" },
+            { label: "Remotion 官方文件 ↗", href: "https://www.remotion.dev/docs/" },
+            { label: "Model Context Protocol (MCP) ↗", href: "https://modelcontextprotocol.io/" },
+            { label: "FFmpeg 官方文件 ↗", href: "https://ffmpeg.org/documentation.html" },
+          ],
+        },
+      };
+
+      const QUICK_PRESETS = {
+        promo:    { type: "product",   footage: "short_raw", needs: ["3d", "motion_blur", "ai_voice", "dual_ratio"], priority: "cinema" },
+        data:     { type: "batch",     footage: "none",      needs: ["charts", "ai_voice", "dual_ratio"], priority: "speed" },
+        tutorial: { type: "tutorial",  footage: "need_rec",  needs: ["ai_voice", "xml_polish"], priority: "speed" },
+        podcast:  { type: "talking",   footage: "long_raw",  needs: ["xml_polish", "dual_ratio"], priority: "speed" },
+        short:    { type: "short",     footage: "none",      needs: ["motion_blur", "ai_voice", "zero_react"], priority: "easy" },
+      };
+
+      const TYPE_LABELS = {
+        knowledge: "知識科普／數據說書片", product: "產品發表／宣傳片／App Demo",
+        tutorial: "軟體教學／程式碼／系統演示", talking: "真人實拍口播／訪談／Podcast",
+        short: "高節奏直式短影音", batch: "系列批量產片（固定版型換數據）",
+      };
+      const FOOTAGE_LABELS = {
+        none: "零實拍畫面（無中生有）", need_rec: "尚未錄製軟體／網頁操作",
+        short_raw: "已有精簡實拍（≤ 3 分鐘）", long_raw: "已有大量實拍／長錄屏（5–60 分鐘）",
+      };
+      const NEED_LABELS = {
+        "3d": "真 3D WebGL／3D 轉場", charts: "商業動態數據圖表／KPI",
+        motion_blur: "強烈動態模糊殘影", light_leak: "電影漏光／GPU 濾鏡",
+        ai_voice: "自然口語 AI 配音", dual_ratio: "16:9 橫式＋9:16 原生直式雙版",
+        zero_react: "零 React 門檻／純 HTML", xml_polish: "匯出 XML 銜接 DaVinci 精修",
+      };
+
+      /**
+       * 多維度權重評分引擎：依 4 項維度計算 5 大方案分數並排序
+       */
+      function evaluateScores() {
+        const sc = { hf: 25, remotion: 25, auto_mcp: 15, mcp_only: 15, hybrid: 22 };
+        const n = state.needs;
+
+        // 1. 影片類型權重
+        if (state.type === "knowledge") { sc.hf += 24; sc.remotion += 28; sc.hybrid += 10; }
+        if (state.type === "product")   { sc.hf += 18; sc.remotion += 24; sc.hybrid += 28; }
+        if (state.type === "tutorial")  { sc.auto_mcp += 34; sc.mcp_only += 20; sc.hybrid += 22; sc.hf -= 8; sc.remotion -= 8; }
+        if (state.type === "talking")   { sc.mcp_only += 42; sc.hybrid += 20; sc.hf -= 20; sc.remotion -= 20; }
+        if (state.type === "short")     { sc.hf += 24; sc.remotion += 22; sc.mcp_only += 14; sc.hybrid += 14; }
+        if (state.type === "batch")     { sc.remotion += 36; sc.hf += 18; sc.hybrid += 14; }
+
+        // 2. 素材現況權重（真實物理瓶頸保護）
+        if (state.footage === "none") {
+          sc.hf += 30; sc.remotion += 30;
+          sc.auto_mcp -= 20; sc.mcp_only -= 30; sc.hybrid -= 12;
+        } else if (state.footage === "need_rec") {
+          sc.auto_mcp += 44; sc.hybrid += 26;
+          sc.hf -= 12; sc.remotion -= 12;
+        } else if (state.footage === "short_raw") {
+          sc.hybrid += 34; sc.mcp_only += 20; sc.hf += 10; sc.remotion += 10;
+        } else if (state.footage === "long_raw") {
+          sc.mcp_only += 46; sc.hybrid += 30;
+          sc.hf -= 35; sc.remotion -= 35;
+        }
+
+        // 3. 特效與實務狀況權重
+        const hasHeavyVfx = n.has("3d") || n.has("charts") || n.has("motion_blur") || n.has("light_leak");
+        if (n.has("3d"))          { sc.remotion += 26; sc.hybrid += 14; sc.hf += 6; }
+        if (n.has("charts"))      { sc.remotion += 22; sc.hf += 12; sc.hybrid += 14; }
+        if (n.has("motion_blur")) { sc.hf += 26; sc.hybrid += 10; sc.remotion += 2; }
+        if (n.has("light_leak"))  { sc.remotion += 18; sc.hf += 12; sc.hybrid += 12; }
+        if (n.has("dual_ratio"))  { sc.remotion += 12; sc.hf += 12; sc.hybrid += 10; }
+        if (n.has("zero_react"))  { sc.hf += 30; sc.remotion -= 24; sc.mcp_only += 6; sc.auto_mcp += 6; }
+        if (n.has("xml_polish"))  { sc.mcp_only += 24; sc.auto_mcp += 20; sc.hybrid += 22; sc.hf -= 10; sc.remotion -= 10; }
+
+        if ((state.footage === "long_raw" || state.footage === "short_raw" || state.footage === "need_rec") && hasHeavyVfx) {
+          sc.hybrid += 28;
+        }
+
+        // 4. 優先取向權重
+        if (state.priority === "speed")  { sc.remotion += 14; sc.mcp_only += 10; sc.auto_mcp += 8; }
+        if (state.priority === "easy")   { sc.hf += 20; sc.mcp_only += 10; sc.remotion -= 8; }
+        if (state.priority === "cinema") { sc.hybrid += 22; sc.remotion += 8; sc.hf += 6; }
+
+        const entries = Object.entries(sc).sort((a, b) => b[1] - a[1]);
+        const maxV = Math.max(entries[0][1], 1);
+        const minV = Math.min(...entries.map((e) => e[1]), 0);
+        const span = Math.max(maxV - minV, 1);
+
+        return entries.map(([id, raw], idx) => {
+          const pct = idx === 0
+            ? Math.min(98, Math.max(84, Math.round(78 + (raw / Math.max(maxV + 12, 60)) * 20)))
+            : Math.max(15, Math.min(92, Math.round(18 + ((raw - minV) / span) * 70)));
+          return { id, raw, pct };
+        });
+      }
+
+      /** 動態產生基於實測數據的推薦理由與避坑警示 */
+      function buildInsights(bestId) {
+        const n = state.needs;
+        const reasons = [];
+
+        if (bestId === "remotion") {
+          reasons.push("<strong>本機速度表現最突出</strong>：在同規格實測中，動態數據圖表渲染快 <strong>2.29×</strong>（10.59s vs 24.26s），WebGL 3D 搭配 <code>--gl=angle</code> 更快達 <strong>3.33×</strong>（25.77s vs 85.83s）。");
+        } else if (bestId === "hf") {
+          reasons.push("<strong>零 React 學習成本、秒開即剪</strong>：套件輕量、AI 直接吐純 HTML/CSS＋秒數排程成功率最高，且官方內建 <strong>448 個特效／圖表／3D 模組目錄</strong>與 13 款字幕皮膚。");
+        } else if (bestId === "auto_mcp") {
+          reasons.push("<strong>徹底消除錄屏手抖重錄</strong>：用 Playwright 自動化腳本精準點擊操作並輸出純淨 1080p 畫面，產品 UI 改版只要重跑腳本 10 秒重錄。");
+        } else if (bestId === "mcp_only") {
+          reasons.push("<strong>避開瀏覽器逐幀重繪瓶頸</strong>：長實拍與訪談素材直接交給支援 MCP 控制的原生剪輯軟體，幾秒完成以文剪片刪氣口與口誤，並用硬體加速極速匯出。");
+        } else {
+          reasons.push("<strong>商業大片級混搭策略</strong>：程式化引擎只負責最吸睛的 3D／數據動畫段落，長實拍或錄屏主體交給 MCP 控剪，同時拿滿視覺張力與剪輯效率！");
+        }
+
+        if (n.has("motion_blur")) {
+          reasons.push("<strong>動態模糊選型關鍵</strong>：Hyperframes 原生一行 <code>data-motion-blur=\"on\"</code> 比 Remotion 子幀重繪快 <strong>2.09×</strong>（20.64s vs 43.12s）且零外掛，高速甩入字卡特別吃香。");
+        }
+        if (n.has("3d")) {
+          reasons.push("<strong>3D 渲染實測依據</strong>：Remotion <code>@remotion/three</code> 開啟 <code>--gl=angle</code> GPU 加速優勢明顯；若追求極致光線追蹤單顆產品特寫，亦可局部搭配 Hyperframes Pathtracer。");
+        }
+        if (n.has("charts")) {
+          reasons.push("<strong>數據視覺化紅利</strong>：將數據存成 JSON 陣列直接綁定折線面積圖與 <code>tabular-nums</code> 大字 KPI 跳數，向量畫質銳利且檔案極輕巧（約 150 KB）。");
+        }
+        if (n.has("light_leak")) {
+          reasons.push("<strong>風格濾鏡資源豐富</strong>：Remotion 內建 <code>@remotion/effects</code>（90 種 GPU 濾鏡）與 WebGL 電影漏光；Hyperframes 亦內建 <code>organic-light-leak-overlay</code> 與 <code>godrays</code>。");
+        }
+        if (n.has("xml_polish")) {
+          reasons.push("<strong>無縫交接專業精修</strong>：MCP 剪輯流程可同步匯出 DaVinci Resolve XML，保留全部剪接點與字幕軌，讓專業調色與微調毫無阻礙。");
+        }
+
+        let warn = "<strong>💡 商業完片避坑提醒：</strong>成片匯出前務必統一響度至 <code>-14 LUFS</code>（搭配 BGM 自動避讓），並用 FFmpeg 產一張 <code>tile=4x3</code> 視覺 QA 聯絡表快速巡檢零黑幀、零字幕壓字。";
+        if (state.footage === "long_raw") {
+          warn = "<strong>⚠️ 長實拍物理瓶頸警示：</strong>實測用程式化引擎硬剪 5 秒 1080p 實拍就要 25–27 秒（10 分鐘實拍會超過 50 分鐘！），千萬別把長實拍主體塞進瀏覽器引擎硬渲。";
+        } else if (n.has("motion_blur") && bestId === "remotion") {
+          warn = "<strong>⚠️ 動態模糊效能提醒：</strong>Remotion 的 <code>&lt;CameraMotionBlur&gt;</code> 會因多重子幀取樣倍增耗時（實測 43.12s），請只局部包覆高速飛入鏡頭，勿全域開啟。";
+        } else if (n.has("dual_ratio")) {
+          warn = "<strong>⚠️ 雙尺寸直式構圖提醒：</strong>切忌把 16:9 橫片上下加黑邊硬縮！請直接輸出原生 <code>1080×1920</code> 上下堆疊版面，字幕縮短為每行 8–12 字並避開底部 280px 平台文案區。";
+        }
+        return { reasons: reasons.slice(0, 4), warn };
+      }
+
+      /** 動態組裝 4~5 步客製化執行 SOP */
+      function buildSop(bestId) {
+        const n = state.needs;
+        const steps = [];
+
+        if (state.footage === "none") {
+          steps.push({ t: "上游資料整理與結構化 JSON 分鏡", d: "先查證真實數據或拆解優質參考片節奏，產出包含逐句台詞、秒數與自然斷詞字幕的 storyboard.json（避免 AI 空泛瞎掰）。" });
+        } else if (state.footage === "need_rec") {
+          steps.push({ t: "自動化腳本執行操作並同步錄屏（1080p）", d: "用 Playwright 自動執行點擊、輸入與翻頁並同步錄影；錄完後跑一行 FFmpeg -g 30 優化關鍵幀確保剪輯拖拉絲滑。" });
+        } else {
+          steps.push({ t: "匯入實拍素材並完成 FFmpeg 規格健檢", d: "先跑 ffprobe 確認影格率與音軌，若關鍵幀間距過大先進行 -g 30 預處理，避免後續時間軸卡頓。" });
+        }
+
+        if (n.has("ai_voice")) {
+          steps.push({ t: "逐句生成自然 AI 配音 ＋ 雙重自動質檢", d: "建立破音字與英文縮寫發音字典，每句獨立產檔後跑 Whisper 聽寫比對並抽聽音感，只局部重配唸錯的那 1 句。" });
+        }
+
+        if (bestId === "hf") {
+          steps.push({ t: "Hyperframes 單檔編排 ＋ 本機即時預覽", d: "從官方 448 目錄挑選基底，用直覺「秒數」對齊配音，開 npx hyperframes preview 調到滿意再一次渲染。" });
+        } else if (bestId === "remotion") {
+          steps.push({ t: "Remotion 元件化組裝 ＋ Studio 逐幀預覽", d: `用 React Props 吃進 JSON 數據${n.has("3d") ? "（3D 場景加 --gl=angle 硬體加速）" : ""}，進 Remotion Studio 確認每一幀後多核極速渲染。` });
+        } else if (bestId === "auto_mcp" || bestId === "mcp_only") {
+          steps.push({ t: "MCP 自動轉逐字稿、去氣口與語意加料", d: "透過 MCP 操控剪輯軟體：轉字級時間碼 → 批次裁除超過 0.55s 空白與口誤 → 每 6–8 秒依語意自動插入 B-roll 與重點字卡。" });
+        } else {
+          const animEng = n.has("zero_react") || (n.has("motion_blur") && !n.has("3d")) ? "Hyperframes" : "Remotion";
+          steps.push({ t: `動效段：用 ${animEng} 獨立產出 3D／數據圖表片頭`, d: "只讓程式化引擎負責最吸睛的開場鉤子、動態圖表與轉場片段，不硬扛長實拍。" });
+          steps.push({ t: "主體段：用 MCP 控剪實拍／錄屏並合入動效 B-roll", d: "透過 MCP 完成以文剪片去氣口與字幕校對，將上一步產出的高質感動效片段精準插入對應段落。" });
+        }
+
+        const finalTxt = n.has("xml_polish")
+          ? "完成 AI 降噪、-14 LUFS 響度平衡與 BGM 避讓後，同步匯出成片 MP4 與 DaVinci Resolve XML 交接調色精修。"
+          : `透過 FFmpeg 執行 -14 LUFS 響度標準化、sidechaincompress BGM 避讓${n.has("dual_ratio") ? "，並同步產出 16:9 橫式與原生 9:16 直式雙版" : ""}，最後跑視覺 QA 聯絡表驗收！`;
+        steps.push({ t: n.has("xml_polish") ? "混音避讓 ＋ 雙格式匯出（MP4 & XML）" : "FFmpeg 商業混音封裝 ＋ 視覺 QA 驗收", d: finalTxt });
+
+        return steps;
+      }
+
+      /** 動態組裝可直接貼給 AI Agent 開工的繁體中文 Prompt */
+      function buildStarterPrompt(route, sop) {
+        const needsArr = Array.from(state.needs).map((k) => NEED_LABELS[k]);
+        const sopLines = sop.map((s, i) => `${i + 1}. ${s.t}：${s.d}`).join("\n");
+        return `請擔任我的 AI 影片導演與自動化剪輯工程師，協助規劃並執行以下專案：
+
+【專案條件】
+- 影片類型：${TYPE_LABELS[state.type]}
+- 素材現況：${FOOTAGE_LABELS[state.footage]}
+- 關鍵需求：${needsArr.length ? needsArr.join("、") : "標準商業成片品質"}
+- 選定處理路線：${route.title}（${route.stack.join(" / ")}）
+
+【請依序協助完成】
+${sopLines}
+
+【品質驗收底線】
+- 繁體中文自然斷詞字幕（不在詞彙中間斷行），保留底部安全區避免壓字；
+- 音訊統一 -14 LUFS 並開啟 BGM 說話自動避讓；
+- 每個關鍵階段完成請提供預覽或 FFmpeg 視覺 QA 聯絡表確認後再繼續。`;
+      }
+
+      /** 複製文字到剪貼簿並顯示回饋（相容本機 file://） */
+      async function copyText(text, btn) {
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          ta.remove();
+        }
+        const orig = btn.textContent;
+        btn.textContent = "已複製 ✓";
+        btn.classList.add("copied");
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.classList.remove("copied");
+        }, 1500);
+      }
+
+      /** 產生包含目前 4 維度選項的可分享網址 */
+      function buildShareUrl() {
+        const u = new URL(window.location.href);
+        u.searchParams.set("t", state.type);
+        u.searchParams.set("f", state.footage);
+        u.searchParams.set("n", Array.from(state.needs).join(","));
+        u.searchParams.set("p", state.priority);
+        return u.toString();
+      }
+
+      /** 同步按鈕狀態並重繪右側診斷結果 */
+      function renderAll() {
+        document.querySelectorAll("[data-q='type']").forEach((b) => b.classList.toggle("selected", b.dataset.val === state.type));
+        document.querySelectorAll("[data-q='footage']").forEach((b) => b.classList.toggle("selected", b.dataset.val === state.footage));
+        document.querySelectorAll("[data-q='priority']").forEach((b) => b.classList.toggle("selected", b.dataset.val === state.priority));
+        document.querySelectorAll("[data-need]").forEach((b) => b.classList.toggle("selected", state.needs.has(b.dataset.need)));
+
+        const ranked = evaluateScores();
+        const top = ranked[0];
+        const route = ROUTES[top.id];
+        const { reasons, warn } = buildInsights(top.id);
+        const sop = buildSop(top.id);
+        const promptText = buildStarterPrompt(route, sop);
+
+        document.getElementById("resHero").className = `res-hero theme-${route.theme}`;
+        document.getElementById("resBadge").textContent = route.badge;
+        document.getElementById("resConf").textContent = `適配度 ${top.pct}%`;
+        document.getElementById("resTitle").textContent = route.title;
+        document.getElementById("resSub").textContent = route.sub;
+        document.getElementById("resStack").innerHTML = route.stack.map((s) => `<span class="stack-pill">${s}</span>`).join("");
+
+        document.getElementById("fitBars").innerHTML = ranked.map((item, idx) => {
+          const r = ROUTES[item.id];
+          return `
+            <div class="fit-row">
+              <span style="color:${idx === 0 ? "#fff" : "var(--muted)"};">${idx === 0 ? "★ " : ""}${r.short}</span>
+              <div class="fit-track"><div class="fit-fill" style="width:${item.pct}%;background:${r.barColor};opacity:${idx === 0 ? 1 : 0.65};"></div></div>
+              <span style="font-family:var(--font-mono);color:${idx === 0 ? "var(--green-soft)" : "var(--muted)"};text-align:right;">${item.pct}%</span>
+            </div>
+          `;
+        }).join("");
+
+        document.getElementById("resReasons").innerHTML = reasons.map((r) => `<li>${r}</li>`).join("");
+        document.getElementById("resWarn").innerHTML = warn;
+        document.getElementById("resSop").innerHTML = sop.map((s, i) => `
+          <div class="sop-step">
+            <span class="sop-idx">0${i + 1}</span>
+            <div class="sop-body"><strong>${s.t}</strong><span>${s.d}</span></div>
+          </div>
+        `).join("");
+        document.getElementById("resCmdLang").textContent = route.cmdLang;
+        document.getElementById("resCmd").textContent = route.cmd;
+        document.getElementById("resPrompt").textContent = promptText;
+        document.getElementById("resDocs").innerHTML = route.docs.map((d) =>
+          `<a class="ext-chip" href="${d.href}" target="_blank" rel="noopener">${d.label}</a>`
+        ).join("");
+
+        // 快取 Markdown 診斷報告
+        window._latestReportMd = `# AI 影片剪輯最優處理方案診斷報告\n\n` +
+          `- **影片類型**：${TYPE_LABELS[state.type]}\n` +
+          `- **素材現況**：${FOOTAGE_LABELS[state.footage]}\n` +
+          `- **進階需求**：${Array.from(state.needs).map((k) => NEED_LABELS[k]).join("、") || "無"}\n` +
+          `- **最優推薦**：${route.title}（適配度 ${top.pct}%）\n\n` +
+          `## 建議執行步驟 SOP\n` +
+          sop.map((s, i) => `${i + 1}. **${s.t}**：${s.d}`).join("\n") +
+          `\n\n## 起手指令\n\`\`\`bash\n${route.cmd}\n\`\`\`\n\n## 給 AI 的開工 Prompt\n\`\`\`\n${promptText}\n\`\`\`\n`;
+      }
+
+      // ── 綁定所有互動按鈕 ──
+      document.querySelectorAll("[data-q]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state[btn.dataset.q] = btn.dataset.val;
+          renderAll();
+        });
+      });
+      document.querySelectorAll("[data-need]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const k = btn.dataset.need;
+          if (state.needs.has(k)) state.needs.delete(k);
+          else state.needs.add(k);
+          renderAll();
+        });
+      });
+      document.querySelectorAll("[data-quick]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const p = QUICK_PRESETS[btn.dataset.quick];
+          if (!p) return;
+          state.type = p.type; state.footage = p.footage; state.needs = new Set(p.needs); state.priority = p.priority;
+          renderAll();
+        });
+      });
+
+      document.getElementById("btnReset")?.addEventListener("click", () => {
+        state.type = "knowledge"; state.footage = "none"; state.needs = new Set(["charts", "ai_voice"]); state.priority = "speed";
+        renderAll();
+      });
+      document.getElementById("btnShareUrl")?.addEventListener("click", function () {
+        copyText(buildShareUrl(), this);
+      });
+      document.getElementById("btnPrint")?.addEventListener("click", () => window.print());
+      document.getElementById("btnCopyReport")?.addEventListener("click", function () {
+        copyText(window._latestReportMd || "", this);
+      });
+      document.getElementById("btnCopyCmd")?.addEventListener("click", function () {
+        copyText(document.getElementById("resCmd").textContent, this);
+      });
+      document.getElementById("btnCopyPrompt")?.addEventListener("click", function () {
+        copyText(document.getElementById("resPrompt").textContent, this);
+      });
+
+      // ── 從分享網址還原狀態（支援 ?t=product&f=short_raw&n=3d,ai_voice&p=cinema） ──
+      const qp = new URLSearchParams(window.location.search);
+      if (qp.get("t") && TYPE_LABELS[qp.get("t")]) state.type = qp.get("t");
+      if (qp.get("f") && FOOTAGE_LABELS[qp.get("f")]) state.footage = qp.get("f");
+      if (qp.has("n")) {
+        state.needs = new Set(qp.get("n").split(",").filter((k) => NEED_LABELS[k]));
+      }
+      if (qp.get("p") && ["speed", "easy", "cinema"].includes(qp.get("p"))) state.priority = qp.get("p");
+
+      renderAll();
+
+      // 公開測試與自動化介面
+      window.PublicAdvisor = {
+        getTop: () => evaluateScores()[0],
+        getShareUrl: buildShareUrl,
+      };
+    })();
+  </script>
+</body>
+</html>
